@@ -1,0 +1,13 @@
+
+.options-box {
+	background-color: #ccd0e5;
+	border: 3px solid #667788;
+	border-radius: 4px;
+	padding: 20px;
+}
+.options-box label {
+	text-align: right;
+}
+.options-box .form-group {
+	margin-bottom: 5px;
+}
