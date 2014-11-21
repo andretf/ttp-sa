@@ -1,6 +1,6 @@
 
 .options-box {
-	background-color: #ccd0e5;
+	background-color: #c5d0e5;
 	border: 3px solid #667788;
 	border-radius: 4px;
 	padding: 20px;
@@ -10,4 +10,28 @@
 }
 .options-box .form-group {
 	margin-bottom: 5px;
+}
+
+.solInicial-table {
+}
+.solInicial-table th {
+    padding: 5px 10px;
+}
+.solInicial-table td {
+    cursor: pointer;
+	text-align: right;
+	padding: 5px 10px;
+}
+.solInicial-table td.time {
+	text-align: left;
+}
+.solInicial-table .line-selected {
+    background-color: #c5d0e5;
+}
+
+.jogo-casa {
+    background-color: #c5e5d0;
+}
+.jogo-fora {
+    background-color: #e5c5d0;
 }

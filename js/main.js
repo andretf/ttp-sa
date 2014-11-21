@@ -1,4 +1,4 @@
-var times = ['ATL', 'NYM', 'PHI', 'MON', 'FLA', 'PIT', 'CIN', 'CHI', 'STL', 'MIL', 'HOU', 'COL', 'SF', 'SD', 'LA', 'ARI'];
+var liga = ['ATL', 'NYM', 'PHI', 'MON', 'FLA', 'PIT', 'CIN', 'CHI', 'STL', 'MIL', 'HOU', 'COL', 'SF', 'SD', 'LA', 'ARI'];
 var dataset = [
     [0, 745, 665, 929, 605, 521, 370, 587, 467, 670, 700, 1210, 2130, 1890, 1930, 1592],
     [745, 0, 80, 337, 1090, 315, 567, 712, 871, 741, 1420, 1630, 2560, 2430, 2440, 2144],
@@ -19,29 +19,94 @@ var dataset = [
 ];
 
 $(document).ready(function() {
-    // Adiciona qtd times
-    var options = '';
-    times.forEach(function(val, i) {
-        options += '<option value="' + (i + 1) + '">' + (i + 1) + '</option>';
-    });
-    $('#QtdTimes').html(options);
-
-
     // 
     $('#run').click(function() {
         try {
-            var solucaoInicial = TTP.GeraSolucaoInicial();
+            var QtdTimes = InputValueToNumber('QtdTimes', 2, 16, 1);
             var temperatura = InputValueToNumber('Temperatura', 1, 10000, 1);
             var alfa = InputValueToNumber('Alfa', 0, 1, 0.001);
             var maxIteracoes = InputValueToNumber('MaxIteracoes', 0, 99999, 1);
             var maxPerturb = InputValueToNumber('MaxPerturb', 0, 999, 1);
             var maxSucessos = InputValueToNumber('MaxSucessos', 0, 999, 1);
         } catch (ex) {
-    		alert(ex);
+            alert(ex);
         }
 
-        var opt = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
-        $('#result-optimal').html('Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(opt) * 1000) / 1000 + ' (Solução: ' + Math.floor(opt * 1000) / 1000 + ')');
+        // Constrói tabela de Solução Inicial
+        var html = '<table id="solInicial-table" class="solInicial-table" border="2"><tr><th>Times \\ Rodadas</th>';
+        for(var i = 0; i < 2 * (QtdTimes - 1); i++){
+            html += '<th style="text-align: center;">#'+(i+1)+'</th>';
+        }
+        html += '</tr>\n';
+        for (var i = 0; i < QtdTimes; i++){
+            html += '<tr><td class="time">'+liga[i]+'</td>';
+
+            for (var j = 0; j < 2 * (QtdTimes-1); j++){
+                html += '<td id="A['+i+']['+j+']"></td>';
+            }
+
+            html += '</tr>';
+        }
+
+        html += '</table>';
+        $('#grafico').html(html);
+
+    	// Adiciona Eventos na tabela de Solução Inicial
+        var $TabelaConteudo = $('#solInicial-table td').not(':first-child');
+        $('#solInicial-table td:first-child').hover(function(){
+        	var TimeID = $(this.parentNode).index();
+    	    $(this.parentNode).addClass('line-selected');
+
+        	$TabelaConteudo.each(function(index, element){
+        		var conteudo = $(element).text();
+			    if (conteudo == TimeID) {
+			        $(element).addClass('jogo-casa');
+			    }
+			    else if (conteudo == -TimeID) {
+			        $(element).addClass('jogo-fora');
+			    }
+			})
+        }, function(){
+    	    $(this.parentNode).removeClass('line-selected');
+        	$TabelaConteudo.each(function(index, element){
+		        $(element).removeClass('jogo-casa').removeClass('jogo-fora');
+			})
+        });
+
+        $TabelaConteudo.hover(function(){
+        	var TimeID = $(this.parentNode).index();
+        	var OponenteID = Math.abs($(this).text());
+        	var indices = [TimeID, OponenteID];
+
+        	$('#solInicial-table tr').filter(function(index) {
+        		return indices.indexOf(index) > -1;
+        	}).children().not(':first-child').each(function(index, element){
+        		var conteudo = $(element).text();
+			    if (conteudo == TimeID) {
+			        $(element).addClass('jogo-casa');
+			    }
+			    else if (conteudo == -TimeID) {
+			        $(element).addClass('jogo-fora');
+			    }
+			    else if (conteudo == OponenteID) {
+			        $(element).addClass('jogo-casa');
+			    }
+			    else if (conteudo == -OponenteID) {
+			        $(element).addClass('jogo-fora');
+			    }
+        	});
+
+        }, function(){
+        	$TabelaConteudo.each(function(index, element){
+		        $(element).removeClass('jogo-casa').removeClass('jogo-fora');
+			})
+        });
+
+
+        var solucaoInicial = TTP.GeraSolucaoInicial(QtdTimes);
+
+        //var opt = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
+        //$('#result-optimal').html('Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(opt) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucaoInicial * 1000) / 1000 + ')');
     });
 
 });
@@ -61,3 +126,67 @@ function InputValueToNumber(idInput, min, max, precisao) {
 
     return valor;
 }
+
+
+var util = util || {
+    /**
+     * Retorna e remove o elemento do array, de menor índice como critério de desempate.
+     * @param  {Array}  array 	Array de onde será removido o elemento.
+     * @param  {Object} value 	Valor do elemento a ser removido.
+     * @return {[type]} Retorna o novo array.
+     */
+    popValue : function(array, value){
+        var position = array.indexOf(value);
+        if (~position){
+            array.splice(position, 1);
+        }
+        return array;
+    },
+    /**
+     * Retorna e remove todos as ocorrências do elemento do array.
+     * @param  {Array}  array 	Array de onde será removido o elemento.
+     * @param  {Object} value 	Valor do elemento a ser removido.
+     * @return {[type]} Retorna o novo array.
+     */
+    popAllValues : function(array, value){
+        var position = array.indexOf(value)
+        while(~position){
+            array.splice(position, 1);
+            position = array.indexOf(value)
+        }
+        return array;
+    },
+
+    /**
+     * Remove aleatoriamente 1 elemento do array, porém sem deixar somente elementos com mesmo valor absoluto.
+     * @return {Object} Retorna o objeto retirado do array aleatoriamente.
+     */
+    randomRemove: function(array){
+        return array.splice(Math.floor(Math.random() * array.length), 1);
+
+    },
+
+    /**
+     * Check if value is a Number
+     * @param  {[type]}  value [description]
+     * @return {Boolean}       [description]
+     */
+    isNumber: function(value){
+        return !isNaN(parseFloat(value)) && isFinite(value);
+    },
+
+    getSinal: function(value){
+        if (!util.isNumber(value)){
+            throw 'Impossível obter o sinal do valor, ele não é um número.';
+            console.log(value);
+        }
+
+        return value/Math.abs(value);
+    }
+};
+
+var tag_story = [1,3,56,6,8,90],
+    id_tag = 90,
+    position = tag_story.indexOf(id_tag);
+
+if ( ~position ) tag_story.splice(position, 1);
