@@ -12,20 +12,31 @@
 	margin-bottom: 5px;
 }
 
+
+
+
+h2 {
+    border-bottom: 1px solid #777;
+}
+
 .solInicial-table {
 }
 .solInicial-table th {
+    background-color: #eee;
+    border: 1px solid #666;
     padding: 5px 10px;
 }
 .solInicial-table td {
+    border: 1px solid #666;
     cursor: pointer;
 	text-align: right;
 	padding: 5px 10px;
 }
 .solInicial-table td.time {
+    background-color: #eee;
 	text-align: left;
 }
-.solInicial-table .line-selected {
+.solInicial-table .line-selected td {
     background-color: #c5d0e5;
 }
 

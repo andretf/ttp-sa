@@ -73,8 +73,8 @@ var TTP = TTP || (function() {
                             util.popValue(cestas.porRodada[j], Math.abs(oponente));
                             util.popValue(cestas.porRodada[j], Math.abs(time));
 
-                            $(document.getElementById('A['+i+']['+j+']')).html(oponente);
-                            $(document.getElementById('A['+oponenteIndex+']['+j+']')).html(time);
+                            UI.fillTableCell('V', i, j, oponente);
+                            UI.fillTableCell('V', oponenteIndex, j, time);
                         }
                     }
                 }
@@ -113,16 +113,64 @@ var TTP = TTP || (function() {
                 throw 'Máximo de tentativas esgotadas para gerar o calendário.';
             }
 
-            return calendarioCandidato;
-            //return Math.random() * 100;
+            return {
+                calendario: calendarioCandidato,
+                viagens: this.CriaMatrizViagens(calendarioCandidato)
+            };
+        },
+        CriaMatrizViagens: function(calendario){
+            var result = [];
+
+            // dsi, dsj são índices correspondentes aos
+            // índices 'i' e 'j' do jogo anterior
+            var dsi, dsj;
+
+            // Percorre cada oponente do calendario
+            for (var i = 0; i < calendario.length; i++){
+                result[i] = [];         // nova linha
+                dsi = i;
+                dsj = i;
+
+                for (var j = 0; j < calendario[i].length; j++){
+
+                    // Se item < 0: jogo-fora e faz viagem, senão joga em casa
+                    dsj = (calendario[i][j] > 0)? i : - calendario[i][j] - 1;
+
+                    result[i][j] = dataset[dsi][dsj];
+                    UI.fillTableCell('A', i, j, result[i][j])
+                    dsi = dsj;
+                }
+
+                // Volta pra casa
+                // Se jogo anterior > 0: jogo foi em casa, permanece em casa (0)
+                // Senão, jogo anterior foi fora, volta pra casa ([dsi][i])
+                var j_ = calendario[i].length;
+                result[i][j_] = (calendario[i][j_-1] > 0)? 0 : dataset[dsi][i];
+
+                UI.fillTableCell('A', i, j, result[i][j_])
+            }
+
+            return result;
         },
         Perturba: function(solucao, temperatura) {
             return Math.max(0, Math.abs(solucao + (Math.random() - 0.5) * temperatura * 0.5));
         },
+
+        /**
+         * Calcula distância das rotas totais (Função objetivo) dada a Matriz das Viagens do calendário de jogos
+         * @param {Array[][]} solucaoInicial Matriz de Viagens
+         */
         FuncaoObj: function(solucao) {
-            //return 4*Math.sin(solucao) + solucao;
-            //return 4*Math.sin(solucao) + 4*Math.cos(solucao) + 2*solucao;
-            return -solucao + 100;
+
+            var valor = 0;
+
+            for (var i = 0; i < solucao.length; i++){
+                for (var j = 0; j < solucao[i].length; j++){
+                    valor += solucao[i][j];
+                }
+            }
+            
+            return valor;
         }
     };
     //#endregion Membros Publicos

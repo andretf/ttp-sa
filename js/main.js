@@ -22,7 +22,7 @@ $(document).ready(function() {
     // 
     $('#run').click(function() {
         try {
-            var QtdTimes = InputValueToNumber('QtdTimes', 2, 16, 1);
+            var qtdTimes = InputValueToNumber('QtdTimes', 2, 16, 1);
             var temperatura = InputValueToNumber('Temperatura', 1, 10000, 1);
             var alfa = InputValueToNumber('Alfa', 0, 1, 0.001);
             var maxIteracoes = InputValueToNumber('MaxIteracoes', 0, 99999, 1);
@@ -32,78 +32,18 @@ $(document).ready(function() {
             alert(ex);
         }
 
-        // Constrói tabela de Solução Inicial
-        var html = '<table id="solInicial-table" class="solInicial-table" border="2"><tr><th>Times \\ Rodadas</th>';
-        for(var i = 0; i < 2 * (QtdTimes - 1); i++){
-            html += '<th style="text-align: center;">#'+(i+1)+'</th>';
-        }
-        html += '</tr>\n';
-        for (var i = 0; i < QtdTimes; i++){
-            html += '<tr><td class="time">'+liga[i]+'</td>';
 
-            for (var j = 0; j < 2 * (QtdTimes-1); j++){
-                html += '<td id="A['+i+']['+j+']"></td>';
-            }
+		$('#divSolucaoInicial').show();
+        $('#solinicial-calendario').html(UI.geraEstruturaCalendario(liga, qtdTimes));
+        $('#solinicial-viagens').html(UI.geraEstruturaViagens(liga, qtdTimes));
 
-            html += '</tr>';
-        }
+        UI.adicionaEventos('solinicial-calendario');
+        UI.adicionaEventos('solinicial-viagens');
 
-        html += '</table>';
-        $('#grafico').html(html);
+        var solucaoInicial = TTP.GeraSolucaoInicial(qtdTimes);
+    	$('#solinicial-valor').text(TTP.FuncaoObj(solucaoInicial.viagens));
 
-    	// Adiciona Eventos na tabela de Solução Inicial
-        var $TabelaConteudo = $('#solInicial-table td').not(':first-child');
-        $('#solInicial-table td:first-child').hover(function(){
-        	var TimeID = $(this.parentNode).index();
-    	    $(this.parentNode).addClass('line-selected');
-
-        	$TabelaConteudo.each(function(index, element){
-        		var conteudo = $(element).text();
-			    if (conteudo == TimeID) {
-			        $(element).addClass('jogo-casa');
-			    }
-			    else if (conteudo == -TimeID) {
-			        $(element).addClass('jogo-fora');
-			    }
-			})
-        }, function(){
-    	    $(this.parentNode).removeClass('line-selected');
-        	$TabelaConteudo.each(function(index, element){
-		        $(element).removeClass('jogo-casa').removeClass('jogo-fora');
-			})
-        });
-
-        $TabelaConteudo.hover(function(){
-        	var TimeID = $(this.parentNode).index();
-        	var OponenteID = Math.abs($(this).text());
-        	var indices = [TimeID, OponenteID];
-
-        	$('#solInicial-table tr').filter(function(index) {
-        		return indices.indexOf(index) > -1;
-        	}).children().not(':first-child').each(function(index, element){
-        		var conteudo = $(element).text();
-			    if (conteudo == TimeID) {
-			        $(element).addClass('jogo-casa');
-			    }
-			    else if (conteudo == -TimeID) {
-			        $(element).addClass('jogo-fora');
-			    }
-			    else if (conteudo == OponenteID) {
-			        $(element).addClass('jogo-casa');
-			    }
-			    else if (conteudo == -OponenteID) {
-			        $(element).addClass('jogo-fora');
-			    }
-        	});
-
-        }, function(){
-        	$TabelaConteudo.each(function(index, element){
-		        $(element).removeClass('jogo-casa').removeClass('jogo-fora');
-			})
-        });
-
-
-        var solucaoInicial = TTP.GeraSolucaoInicial(QtdTimes);
+        //UI.preencheTabelaViagens(solucaoInicial.viagens);
 
         //var opt = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
         //$('#result-optimal').html('Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(opt) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucaoInicial * 1000) / 1000 + ')');
@@ -185,8 +125,117 @@ var util = util || {
     }
 };
 
-var tag_story = [1,3,56,6,8,90],
-    id_tag = 90,
-    position = tag_story.indexOf(id_tag);
 
-if ( ~position ) tag_story.splice(position, 1);
+var UI = UI || {
+	geraEstruturaCalendario: function(liga, qtdTimes){
+        // Constrói tabela de Solução Inicial
+        var html = '<tr><th>Times \\ Rodadas</th>';
+
+        for(var i = 0; i < 2 * (qtdTimes - 1); i++){
+            html += '<th style="text-align: center;">#'+(i+1)+'</th>';
+        }
+        html += '</tr>\n';
+        for (var i = 0; i < qtdTimes; i++){
+            html += '<tr><td class="time">'+(i+1)+': '+liga[i]+'</td>';
+
+            for (var j = 0; j < 2 * (qtdTimes-1); j++){
+                html += '<td id="V['+i+']['+j+']"></td>';
+            }
+
+            html += '</tr>';
+        }
+
+		return html;		
+	},
+	geraEstruturaViagens: function(liga, qtdTimes){
+        // Constrói tabela de Solução Inicial
+        var html = '<tr><th>Times \\ Viagens</th>';
+
+        for(var i = 0; i < 2 * (qtdTimes - 1); i++){
+            html += '<th style="text-align: center;">'+i+' -> '+(i+1)+'</th>';
+        }
+        html += '<th style="text-align: center;">'+2*(qtdTimes-1)+' -> '+0+'</th>';
+
+        html += '</tr>\n';
+        for (var i = 0; i < qtdTimes; i++){
+            html += '<tr><td class="time">'+(i+1)+': '+liga[i]+'</td>';
+
+            for (var j = 0; j <= 2 * (qtdTimes-1); j++){
+                html += '<td id="A['+i+']['+j+']"></td>';
+            }
+
+            html += '</tr>';
+        }
+
+		return html;		
+	},
+
+	adicionaEventos: function(tableId){
+    	// Adiciona Eventos na tabela de Solução Inicial
+        var $TabelaConteudo = $('#'+tableId+' td').not(':first-child');
+        $('#'+tableId+' td:first-child').hover(function(){
+        	var TimeID = $(this.parentNode).index();
+    	    $(this.parentNode).addClass('line-selected');
+
+        	$TabelaConteudo.each(function(index, element){
+        		var conteudo = $(element).text();
+			    if (conteudo == TimeID) {
+			        $(element).addClass('jogo-casa');
+			    }
+			    else if (conteudo == -TimeID) {
+			        $(element).addClass('jogo-fora');
+			    }
+			})
+        }, function(){
+    	    $(this.parentNode).removeClass('line-selected');
+        	$TabelaConteudo.each(function(index, element){
+		        $(element).removeClass('jogo-casa').removeClass('jogo-fora');
+			})
+        });
+
+        $TabelaConteudo.hover(function(){
+        	var TimeID = $(this.parentNode).index();
+        	var OponenteID = Math.abs($(this).text());
+        	var indices = [TimeID, OponenteID];
+
+        	$('#'+tableId+' tr').filter(function(index) {
+        		return indices.indexOf(index) > -1;
+        	}).children().not(':first-child').each(function(index, element){
+        		var conteudo = $(element).text();
+			    if (conteudo == TimeID || conteudo == OponenteID) {
+			        $(element).addClass('jogo-casa');
+			    }
+			    else if (conteudo == -TimeID || conteudo == -OponenteID) {
+			        $(element).addClass('jogo-fora');
+			    }
+        	});
+        }, function(){
+        	$TabelaConteudo.each(function(index, element){
+		        $(element).removeClass('jogo-casa').removeClass('jogo-fora');
+			})
+        });
+    },
+
+/*
+    preencheTabelaViagens: function(matriz){
+    	for (var i = 0; i < matriz.length; i++){
+	    	for (var j = 0; j < matriz.length; j++){
+	    		this.fillTableCell('A', i, j, matriz[i][j]);
+	    	}
+    	}
+    },*/
+
+
+    /**
+     * Preenche uma posição na tabela
+     * @param  {string} prefixoMatriz Prefixo da Matriz
+     * @param  {int} 	i             linha
+     * @param  {int} 	j             coluna
+     * @param  {int} 	value         valor a ser colocado na posição
+     */
+    fillTableCell: function(prefixoMatriz, i, j, value){
+    	$(document.getElementById(prefixoMatriz+'['+i+']['+j+']')).text(value);
+    }
+
+};
+
