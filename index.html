@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 	<title>TTP + SA</title>
 	<meta charset="utf-8">
-	
-	<link rel="stylesheet" href="css/bootstrap.css" />
+    <meta name="description" content="Solução básico em JavaScript para resolução do Traveling Tournament Problem (TTP) usando o algoritmo de Simulated Annealing (Aferrecimento Simulado) para trabalho de Otimização da UFRGS">
+
+    <link rel="stylesheet" href="css/bootstrap.css" />
 	<link rel="stylesheet" href="css/bootstrap-theme.css" />
 	<link rel="stylesheet" href="css/styles.css" />
 	<script src="js/libs/jquery-2.1.1.js"></script>
@@ -17,9 +18,11 @@
 	
 	<div class="container">
 		<h1>Travelling Salesman Problem + Simulated Annealing</h1>
-		<h5>por <a href="https://linkedin.com/in/andretf/pt">Andre Figueiredo</a>, Mateus da Silva</h5>
-		<h6>Novembro de 2014</h6>
-		
+	    <h5>por <a href="https://linkedin.com/in/andretf/pt">Andre Figueiredo</a>, Mateus da Silva</h5>
+	    <a href="http://mat.gsia.cmu.edu/TOURN/">Ver página com instâncias e mais informações sobre o problema.</a><br />
+	    <a href="http://mat.gsia.cmu.edu/TOURN/">Ver documento com a especificação do trabalho.</a>
+	    <hr />
+
 		<div class="row">
 			<div class="col-md-4">
 				<div class="options-box form-group-xs">
@@ -29,7 +32,7 @@
 							<label class="col-md-8 control-label" for="QtdTimes">Quantidade de Times:</label>
 							<div class="col-md-4">
 								<select class="form-control" id="QtdTimes">
-									<option value="4">4</option>
+									<option value="4" selected>4</option>
 									<option value="6">6</option>
 									<option value="8">8</option>
 									<option value="10">10</option>
@@ -42,7 +45,7 @@
 						<div class="row form-group form-group-sm">
 							<label class="col-md-8 control-label" for="Temperatura">Temperatura:</label>
 							<div class="col-md-4">
-								<input class="form-control" type="text" id="Temperatura" value="10" />
+								<input class="form-control" type="text" id="Temperatura" value="1000" />
 							</div>
 						</div>
 						<div class="row form-group">
@@ -64,39 +67,63 @@
 						<div class="row form-group">
 							<label class="col-md-8 control-label" for="MaxPerturb">Perturbações/iteração:</label>
 							<div class="col-md-4">
-								<input class="form-control" type="text" id="MaxPerturb" value="1" />
+								<input class="form-control" type="text" id="MaxPerturb" value="10" />
 							</div>
 						</div>
 						<div class="row form-group">
 							<label class="col-md-8 control-label" for="MaxSucessos">Sucessos/iteração:</label>
 							<div class="col-md-4">
-								<input class="form-control" type="text" id="MaxSucessos" value="1" />
+								<input class="form-control" type="text" id="MaxSucessos" value="5" />
 							</div>
 						</div>
 					</fieldset>
 					<fieldset class="form-horizontal">
 						<legend>&nbsp;</legend>
-						<div class="row form-group">
-							<div class="col-md-12 text-right">
-								<button id="run" class="btn btn-primary">Executar</button>
-							</div>
-						</div>
+                        <div class="row form-group">
+                            <div class="col-md-8">
+                                <p class="btn btn-block" style="text-align:left">
+                                    Temperatura: <span id="TAtual" class="bg-info text-info"></span>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <button id="run" class="btn btn-primary">Executar</button>
+                            </div>
+                        </div>
 					</fieldset>
 				</div>
 			</div>
 			
 			<div class="col-md-8">
-				<div id="results" class="solinicial-box">
+				<div id="results" class="results-box" style="display:none">
+					<div class="row">
+						<div class="col-sm-3">
+							<h4>Valor ótimo:</h4>
+							<p id="result-optimal" class="btn btn-block bg-info text-info" style="text-align:right"></p>
+						</div>
+						<div class="col-sm-3">
+							<h4>Melhor possível:</h4>
+							<p id="instancia-feasible" class="btn btn-block bg-info text-info" style="text-align:right"></p>
+						</div>
+						<div class="col-sm-3">
+							<h4>Limite Teórico:</h4>
+							<p id="instancia-lowerbound" class="btn btn-block bg-info text-info" style="text-align:right"></p>
+						</div>
+					</div>
+
+					<h4>Calendário ótimo:</h4>
+					<table id="solotima-calendario" class="solInicial-table">
+					</table>
+
+					<div id="grafico"></div>
 				</div>
-				<div id="results" class="results-box">
-					<h4>Melhor valor ótimo: <span id="result-optimal"></span></h4>
-				</div>
-				<div id="grafico"></div>
 			</div>
 		</div>
 
 		<div id="divSolucaoInicial" style="display:none">
 			<h2>Solução Inicial</h2>
+
+			<h4>Valor: <span id="solinicial-valor"></span></h4>						
+
 			<h4>Calendário:</h4>
 			<table id="solinicial-calendario" class="solInicial-table">
 			</table>
@@ -105,20 +132,16 @@
 			<h4>Viagens:</h4>
 			<table id="solinicial-viagens" class="solInicial-table">
 			</table>
-
-			<br>
-			<h4>Valor da instância:</h4>
-			<p id="solinicial-valor" class="success"></p>
 		</div>
 
 		<footer class="small">
 			<hr>
 			<div>
-				Aplicação parte do trabalho de Otimização 2014/2.<br>
+			    Aplicação parte do trabalho de Otimização 2014/2<br/>
+			    Novembro de 2014<br />  
 				<a href="http://www.inf.ufrgs.br/~mrpritt/doku.php">Prof. Marcus Ritt</a><br>
 				<a href="http://www.inf.ufrgs.br">Instituto de Informática</a><br>
 				<a href="http://www.ufrgs.br">Universidade Federal do Rio Grande do Sul</a><br>
-
 			</div>
 		</footer>
 	</div>

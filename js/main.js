@@ -1,37 +1,28 @@
+'use strict';
+
 var liga = ['ATL', 'NYM', 'PHI', 'MON', 'FLA', 'PIT', 'CIN', 'CHI', 'STL', 'MIL', 'HOU', 'COL', 'SF', 'SD', 'LA', 'ARI'];
-var dataset = [
-    [0, 745, 665, 929, 605, 521, 370, 587, 467, 670, 700, 1210, 2130, 1890, 1930, 1592],
-    [745, 0, 80, 337, 1090, 315, 567, 712, 871, 741, 1420, 1630, 2560, 2430, 2440, 2144],
-    [665, 80, 0, 380, 1020, 257, 501, 664, 808, 697, 1340, 1570, 2520, 2370, 2390, 2082],
-    [929, 337, 380, 0, 1380, 408, 622, 646, 878, 732, 1520, 1530, 2430, 2360, 2360, 2194],
-    [605, 1090, 1020, 1380, 0, 1010, 957, 1190, 1060, 1270, 966, 1720, 2590, 2270, 2330, 1982],
-    [521, 315, 257, 408, 1010, 0, 253, 410, 557, 451, 1140, 1320, 2260, 2110, 2130, 1829],
-    [370, 567, 501, 622, 957, 253, 0, 250, 311, 325, 897, 1090, 2040, 1870, 1890, 1580],
-    [587, 712, 664, 646, 1190, 410, 250, 0, 260, 86, 939, 916, 1850, 1730, 1740, 1453],
-    [467, 871, 808, 878, 1060, 557, 311, 260, 0, 328, 679, 794, 1740, 1560, 1590, 1272],
-    [670, 741, 697, 732, 1270, 451, 325, 86, 328, 0, 1005, 905, 1846, 1731, 1784, 1458],
-    [700, 1420, 1340, 1520, 966, 1140, 897, 939, 679, 1005, 0, 878, 1640, 1300, 1370, 1016],
-    [1210, 1630, 1570, 1530, 1720, 1320, 1090, 916, 794, 905, 878, 0, 947, 832, 830, 586],
-    [2130, 2560, 2520, 2430, 2590, 2260, 2040, 1850, 1740, 1846, 1640, 947, 0, 458, 347, 654],
-    [1890, 2430, 2370, 2360, 2270, 2110, 1870, 1730, 1560, 1731, 1300, 832, 458, 0, 112, 299],
-    [1930, 2440, 2390, 2360, 2330, 2130, 1890, 1740, 1590, 1784, 1370, 830, 347, 112, 0, 358],
-    [1592, 2144, 2082, 2194, 1982, 1829, 1580, 1453, 1272, 1458, 1016, 586, 654, 299, 358, 0]
-];
 
 $(document).ready(function() {
     // 
-    $('#run').click(function() {
+    $('#run').click(function () {
+    	$('#results').hide();
+    	$('#divSolucaoInicial').hide();
+    	$('#solinicial-calendario').html('');
+    	$('#solinicial-viagens').html('');
+    	$('#solinicial-valor').text('');
+
         try {
-            var qtdTimes = InputValueToNumber('QtdTimes', 2, 16, 1);
-            var temperatura = InputValueToNumber('Temperatura', 1, 10000, 1);
-            var alfa = InputValueToNumber('Alfa', 0, 1, 0.001);
-            var maxIteracoes = InputValueToNumber('MaxIteracoes', 0, 99999, 1);
-            var maxPerturb = InputValueToNumber('MaxPerturb', 0, 999, 1);
-            var maxSucessos = InputValueToNumber('MaxSucessos', 0, 999, 1);
+            var qtdTimes = util.inputValueToNumber('QtdTimes', 2, 16, 1);
+            var temperatura = util.inputValueToNumber('Temperatura', 1, 10000, 1);
+            var alfa = util.inputValueToNumber('Alfa', 0, 1, 0.001);
+            var maxIteracoes = util.inputValueToNumber('MaxIteracoes', 0, 99999, 1);
+            var maxPerturb = util.inputValueToNumber('MaxPerturb', 0, 9999, 1);
+            var maxSucessos = util.inputValueToNumber('MaxSucessos', 0, 9999, 1);
         } catch (ex) {
             alert(ex);
         }
 
+        $('#TAtual').text(temperatura);
 
 		$('#divSolucaoInicial').show();
         $('#solinicial-calendario').html(UI.geraEstruturaCalendario(liga, qtdTimes));
@@ -41,31 +32,30 @@ $(document).ready(function() {
         UI.adicionaEventos('solinicial-viagens');
 
         var solucaoInicial = TTP.GeraSolucaoInicial(qtdTimes);
-    	$('#solinicial-valor').text(TTP.FuncaoObj(solucaoInicial.viagens));
+    	$('#solinicial-valor').text(TTP.FuncaoObj(solucaoInicial));
+        UI.atualizaTabela(solucaoInicial.calendario, 'V');
+        UI.atualizaTabela(solucaoInicial.viagens, 'A');
 
-        //UI.preencheTabelaViagens(solucaoInicial.viagens);
 
-        //var opt = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
-        //$('#result-optimal').html('Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(opt) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucaoInicial * 1000) / 1000 + ')');
+
+    	$('#results').show();
+    	var info = TTP.Info(qtdTimes);
+    	$('#instancia-feasible').text(info.feasibleSolution.value + ' ' + info.feasibleSolution.ref);
+    	$('#instancia-lowerbound').text(info.lowerBound.value + ' ' + info.lowerBound.ref);
+    	$('#result-optimal').text(' ');
+
+    	$('#solotima-calendario').html(UI.geraEstruturaOtima(liga, qtdTimes));
+        UI.adicionaEventos('solotima-calendario');
+        UI.atualizaTabela(solucaoInicial.calendario, 'O');
+
+        //var valorOtimo = TTP.FuncaoObj(solucaoInicial.viagens);
+        var valorOtimo = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
+
+        UI.atualizaTabela(valorOtimo.calendario, 'O');
+    	$('#result-optimal').text(TTP.FuncaoObj(valorOtimo));
     });
 
 });
-
-function InputValueToNumber(idInput, min, max, precisao) {
-    valor = $.trim($('#' + idInput).val());
-    if (!parseFloat(valor) || !isFinite(valor)) {
-        throw "Todos os campos são obrigatórios e devem ser numéricos.";
-    }
-
-    valor = Math.floor(valor * (1 / precisao)) * precisao;
-    $('#' + idInput).val(valor);
-
-    if (valor < min || valor > max) {
-        throw 'O campo "' + $('#' + idInput).closest('label').replace + '" deve estar entre ' + min + ' e ' + max + ', inclusive';
-    }
-
-    return valor;
-}
 
 
 var util = util || {
@@ -102,8 +92,24 @@ var util = util || {
      * @return {Object} Retorna o objeto retirado do array aleatoriamente.
      */
     randomRemove: function(array){
-        return array.splice(Math.floor(Math.random() * array.length), 1);
+        return array.splice(Math.floor(Math.random() * array.length), 1)[0];
+    },
 
+
+    inputValueToNumber: function (idInput, min, max, precisao) {
+        var valor = $.trim($('#' + idInput).val());
+        if (!parseFloat(valor) || !isFinite(valor)) {
+            throw "Todos os campos são obrigatórios e devem ser numéricos.";
+        }
+
+        valor = Math.floor(valor * (1 / precisao)) * precisao;
+        $('#' + idInput).val(valor);
+
+        if (valor < min || valor > max) {
+            throw 'O campo "' + $('#' + idInput).closest('label').replace + '" deve estar entre ' + min + ' e ' + max + ', inclusive';
+        }
+
+        return valor;
     },
 
     /**
@@ -122,6 +128,56 @@ var util = util || {
         }
 
         return value/Math.abs(value);
+    },
+
+    swap: function(value1, value2){
+    	var temp = value1;
+    	value1 = value2;
+    	value2 = temp;
+    	return [value1, value2];
+    },
+
+
+
+    count: function(array, value){
+    	return array.filter(function(item){
+    		return item == value;
+    	}).length;
+    },
+
+    countAbsoluto: function(array, value){
+    	return array.filter(function(item){
+    		return Math.abs(item) === value;
+    	}).length;
+    },
+
+
+    matrizColuna: function(matriz, coluna){
+    	var result = [];
+    	
+    	for (var i = 0; i < matriz.length; i++){
+    		result.push(matriz[i][coluna]);
+    	}
+
+    	return result;
+    },
+
+    /**
+     * Clona rapidamente a matriz.
+     * @param  {array[][]} matriz matriz de origem
+     * @return {array[][]}        Matriz clonada
+     */
+    clonaMatriz: function(matriz){
+    	var clone = [];
+    	
+    	for(var i = 0; i < matriz.length; i++){
+    		clone[i] = [];
+	    	for(var j = 0; j < matriz[i].length; j++){
+	    		clone[i].push(matriz[i][j]);
+    		}
+    	}
+
+    	return clone;
     }
 };
 
@@ -140,6 +196,26 @@ var UI = UI || {
 
             for (var j = 0; j < 2 * (qtdTimes-1); j++){
                 html += '<td id="V['+i+']['+j+']"></td>';
+            }
+
+            html += '</tr>';
+        }
+
+		return html;		
+	},
+	geraEstruturaOtima: function(liga, qtdTimes){
+        // Constrói tabela de Solução Inicial
+        var html = '<tr><th>Times \\ Rodadas</th>';
+
+        for(var i = 0; i < 2 * (qtdTimes - 1); i++){
+            html += '<th style="text-align: center;">#'+(i+1)+'</th>';
+        }
+        html += '</tr>\n';
+        for (var i = 0; i < qtdTimes; i++){
+            html += '<tr><td class="time">'+(i+1)+': '+liga[i]+'</td>';
+
+            for (var j = 0; j < 2 * (qtdTimes-1); j++){
+                html += '<td id="O['+i+']['+j+']"></td>';
             }
 
             html += '</tr>';
@@ -216,16 +292,6 @@ var UI = UI || {
         });
     },
 
-/*
-    preencheTabelaViagens: function(matriz){
-    	for (var i = 0; i < matriz.length; i++){
-	    	for (var j = 0; j < matriz.length; j++){
-	    		this.fillTableCell('A', i, j, matriz[i][j]);
-	    	}
-    	}
-    },*/
-
-
     /**
      * Preenche uma posição na tabela
      * @param  {string} prefixoMatriz Prefixo da Matriz
@@ -235,7 +301,14 @@ var UI = UI || {
      */
     fillTableCell: function(prefixoMatriz, i, j, value){
     	$(document.getElementById(prefixoMatriz+'['+i+']['+j+']')).text(value);
-    }
+    },
 
+    atualizaTabela: function(matriz, prefixoMatriz){
+    	for(var i = 0; i < matriz.length; i++){
+	    	for(var j = 0; j < matriz[i].length; j++){
+		    	$(document.getElementById(prefixoMatriz + '['+i+']['+j+']')).text(matriz[i][j]);
+		    }
+	    }
+    }
 };
 

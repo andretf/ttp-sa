@@ -5,7 +5,12 @@
 
 var SA = SA || (function() {
     //#region Membros Privados
-
+    function clonaSolucao(solucao) {
+        return {
+            calendario: util.clonaMatriz(solucao),
+            viagens: TTP.CriaMatrizViagens(solucao.calendario)
+        };
+    }
     //#endregion Membros Privados
 
     //#region Membros Publicos
@@ -21,22 +26,24 @@ var SA = SA || (function() {
          * @param {int} 		maxPerturb		máximo de perturbações por iteração
          * @param {int} 		maxSucessos		limite de sucessos por iteração
          */
-        Exec: function(solucao, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos) {
-            $('#grafico').html('');
-            $('#grafico').append('<div>Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(solucao) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucao * 1000) / 1000 + ')</div>');
+        Exec: function(solucao, tempInicial, alfa, maxIteracoes, maxPerturb, maxSucessos) {
+            //$('#grafico').html('');
+            //$('#grafico').append('<div>Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(solucao) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucao * 1000) / 1000 + ')</div>');
 
             var sucessos = 1;
+            var bestSolucao = clonaSolucao(solucao);
+            var temperatura = tempInicial;
+            UI.atualizaTabela(bestSolucao.calendario, 'O');
 
-            for (var i = 0; i < maxIteracoes * 1000 && temperatura >= 1 && sucessos > 0; i++) {
+            for (var i = 0; i < maxIteracoes*10 && temperatura >= 1 && sucessos > 0; i++) {
                 // para limitar sucessos por iteração do arrefecimento
                 sucessos = 0;
 
                 // Criar e analisar diversas perturbações limitando a uma qtd de perturbações e sucessos
-                for (var ip = 0; ip < maxPerturb * 1000 && sucessos < maxSucessos * 1000; ip++) {
-
+                for (var ip = 0; ip < maxPerturb && sucessos < maxSucessos; ip++) {
                     // Tentar achar uma nova solução
-                    var solucao_ = TTP.Perturba(solucao, temperatura);
-
+                    var solucao_ = TTP.Perturba(solucao, temperatura, tempInicial);
+                        
                     if (TTP.FuncaoObj(solucao_) >= 0) {
                         var f = TTP.FuncaoObj(solucao);
                         var f_ = TTP.FuncaoObj(solucao_);
@@ -47,17 +54,25 @@ var SA = SA || (function() {
                         if (delta < 0 || e > Math.random()) {
                             solucao = solucao_;
                             sucessos++;
+
+                            if (f_ < TTP.FuncaoObj(bestSolucao)){
+                                bestSolucao = clonaSolucao(solucao_);
+                                UI.atualizaTabela(bestSolucao.calendario, 'O');
+                                //console.log(TTP.SolucaoValida(bestSolucao.calendario));
+                            }
                         }
                     }
                 }
 
+
                 // Arrefecer
                 temperatura *= alfa;
+                document.getElementById('TAtual').innerText = parseInt(temperatura);
 
-                $('#grafico').append('<div>Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(solucao) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucao * 1000) / 1000 + ')</div>');
+                //$('#grafico').append('<div>Novo valor ótimo: ' + Math.floor(TTP.FuncaoObj(solucao) * 1000) / 1000 + ' (Solução: ' + Math.floor(solucao * 1000) / 1000 + ')</div>');
             }
 
-            return solucao;
+            return bestSolucao;
         }
     }
     //#endregion Membros Publicos
