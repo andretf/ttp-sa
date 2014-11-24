@@ -22,8 +22,6 @@ $(document).ready(function() {
             alert(ex);
         }
 
-        $('#TAtual').text(temperatura);
-
 		$('#divSolucaoInicial').show();
         $('#solinicial-calendario').html(UI.geraEstruturaCalendario(liga, qtdTimes));
         $('#solinicial-viagens').html(UI.geraEstruturaViagens(liga, qtdTimes));
@@ -52,7 +50,7 @@ $(document).ready(function() {
         var valorOtimo = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
 
         UI.atualizaTabela(valorOtimo.calendario, 'O');
-    	$('#result-optimal').text(TTP.FuncaoObj(valorOtimo));
+        $('#result-optimal').text(TTP.FuncaoObj(valorOtimo));
     });
 
 });

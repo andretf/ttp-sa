@@ -23,6 +23,7 @@ var TTP = (function() {
     ];
 
 
+
     function inicializaCestas_PorRodada(qtdTimes){
         // Cria conjunto de elementos (ID dos times) para colocar em cada cesta
         var valores = [];
@@ -129,7 +130,7 @@ var TTP = (function() {
             var cestaState = cestas;
             var tentativas = 0;
 
-            while(!rodadaPreenchida(calendario, j) && tentativas < 100){
+            while(!rodadaPreenchida(calendario, j) && tentativas < 1000){
                 cestas = cestaState;
 
                 try {
@@ -164,7 +165,7 @@ var TTP = (function() {
                 tentativas++;
             }
 
-            if (tentativas === 100){
+            if (tentativas === 1000){
                 console.log('Esgotou tentativas. Regera calendário.');
                 return null;
             }
@@ -291,27 +292,20 @@ var TTP = (function() {
         return { calendario: A, viagens: TTP.CriaMatrizViagens(A) };
     }
 
-    function trocaPosicoes(A) {
-        var combinacoes = [];
-        for (var i = 0; i < A.length - 1; i++) {
-            for (var j = 1; j < A.length; j++) {
-                if (i !== j && combinacoes.filter(function (a) { return a[0] === j && a[1] === i }).length === 0) {
-                    combinacoes.push([i, j]);
-                }
-            }
-        }
+    var perturb = {
+        combinacoes: []
+    };
 
+    function trocaPosicoes(A) {
         // Seleciona 2 times
-        var comb = combinacoes[Math.floor(Math.random(combinacoes.length))];
+        var comb = perturb.combinacoes[Math.floor(Math.random() * perturb.combinacoes.length)];
         var i1 = comb[0];
         var i2 = comb[1];
 
-        var ok = true;
-
-        for (var i = 0; i < A[0].length*500; i++) {
-            // rodadas onde ocorre confronto direto entre os 2 times selecionados
+        // tentativas
+        for (var i = 0; i < A[0].length*10; i++) {
             var rodadas = [];
-
+            // rodadas onde ocorre confronto direto entre os 2 times selecionados
             for (var j = 0; j < A[0].length; j++) {
                 // adiciona se não for entre eles mesmos (não queremos um time jogando com ele mesmo)
                 if (Math.abs(A[i1][j]) !== i2 + 1 && Math.abs(A[i2][j]) !== i1 + 1) {
@@ -319,9 +313,7 @@ var TTP = (function() {
                 }
             }
 
-            var saveState_matriz = clonaMatriz(A);
             var swap;
-
             while (rodadas.length > 0) {
                 var j = util.randomRemove(rodadas);
                 swap = A[i1][j];
@@ -329,7 +321,11 @@ var TTP = (function() {
                 A[i2][j] = swap;
 
                 if (TTP.SolucaoValida(A)) {
+                    //console.log('Pertubou matriz com sucesso!');
                     return A;
+                }
+                else {
+                    //console.log('Não pertubou sucesso!');
                 }
             }
         }
@@ -371,9 +367,9 @@ var TTP = (function() {
                 throw 'A matriz a ser perturbada não é válida.';
             }
             var A = clonaMatriz(solucao.calendario);
-            var perturbou = false;
-            var qtdRodadas = A[0].length;
-            var candidato;
+            //var perturbou = false;
+            //var qtdRodadas = A[0].length;
+            //var candidato;
 
             //if (candidato === null) {
             //    candidato = trocaColunas(A);
@@ -382,7 +378,7 @@ var TTP = (function() {
             //    }
             //}
 
-            for (var t = 0; t < temperatura * 10; t++) {
+            for (var t = 0; t < temperatura; t++) {
                 candidato = trocaPosicoes(A);
                 if (candidato !== null) {
                     A = candidato;
@@ -395,6 +391,19 @@ var TTP = (function() {
 
             return { calendario: A, viagens: TTP.CriaMatrizViagens(A) };
             //UI.atualizaTabela(A, 'O'); // debug
+        },
+
+        PreparaPertubacoes: function (solucao) {
+            var A = solucao.calendario;
+
+            perturb.combinacoes = [];
+            for (var i = 0; i < A.length - 1; i++) {
+                for (var j = i + 1; j < A.length; j++) {
+                    if (i !== j) {
+                        perturb.combinacoes.push([i, j]);
+                    }
+                }
+            }
         },
 
         /**
@@ -415,12 +424,15 @@ var TTP = (function() {
         },
 
         SolucaoValida: function (A) {
-            for (var i = 0; i < A.length; i++){
+            var colunas = [];
+            for (var i = 0; i < A.length; i++) {
                 var somalinha = 0;
-                for (var j = 0; j < A[i].length; j++){
+
+                for (var j = 0; j < A[i].length; j++) {
                     var absAtual = Math.abs(A[i][j]);
+
                     // Não pode jogar consigo mesmo
-                    if (absAtual == i + 1) {
+                    if (absAtual === i + 1) {
                         return false;
                     }
                     
@@ -428,22 +440,22 @@ var TTP = (function() {
                     if (A[i].lastIndexOf(A[i][j]) > j) {
                         return false;
                     }
-                    //if (A[i].indexOf(A[i][j]) < j) {
-                    //     return false;
-                    //}
-
-                    // Somente 1 jogo do time por rodada
-                    var coluna = util.matrizColuna(A, j);
-                    if (coluna.lastIndexOf(absAtual) > i) {
-                         return false;
-                    }
 
                     // A x -B ou -B x A
                     if (A[i][j] === -A[absAtual - 1][j]) {
                         return false;
                     }
 
-                    if (j > 0){
+                    // Somente 1 jogo do time por rodada
+                    if (colunas[j] === undefined) {
+                        colunas[j] = [];
+                    }
+                    colunas[j].push(absAtual);
+                    if (colunas[j].indexOf(absAtual) < i) {
+                        return false;
+                    }
+
+                    if (j > 0) {
                         // Não deve ter sequencia de jogos A x B, B x A
                         if (absAtual === Math.abs(A[i][j - 1])) {
                              return false;
@@ -462,11 +474,12 @@ var TTP = (function() {
                             }
                         }
                     }
+
                     somalinha += A[i][j];
                 }
 
                 // Somas das oponentes * localidade do time == 0
-                if (somalinha > 0) {
+                if (somalinha !== 0) {
                      return false;
                 }
             }
