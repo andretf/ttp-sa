@@ -33,7 +33,7 @@ var SA = SA || (function() {
             UI.atualizaTabela(bestSolucao.calendario, 'O');
             TTP.PreparaPertubacoes(solucao);
 
-            for (var i = 0; i < maxIteracoes*10 && temperatura >= 1 && sucessos > 0; i++) {
+            for (var i = 0; i < maxIteracoes*1000 && temperatura >= 0.1 && sucessos > 0; i++) {
                 // para limitar sucessos por iteração do arrefecimento
                 sucessos = 0;
 
@@ -41,6 +41,10 @@ var SA = SA || (function() {
                 for (var ip = 0; ip < maxPerturb && sucessos < maxSucessos; ip++) {
                     // Tentar achar uma nova solução
                     var solucao_ = TTP.Perturba(solucao, temperatura, tempInicial);
+
+                    if (!TTP.SolucaoValida(solucao_)) {
+                        solucao_ = solucao;
+                    }
 
                     if (TTP.FuncaoObj(solucao_) >= 0) {
                         var f = TTP.FuncaoObj(solucao);

@@ -65,25 +65,35 @@ var TTP = (function() {
     function sorteiaOponente(A, i, j, cestas){
         
         // oponente disponíveis para sorteio, após aplicação das restrições
-        var disponiveis = cestas.porTime[i].filter(function(item, pos){
-            return cestas.porRodada[j].indexOf(Math.abs(item)) > -1;             // restrições (1) e (2)
-        });
+        var disponiveis = [];
+
+        //var disponiveis = cestas.porTime[i].filter(function (item, pos) {
+        //    return cestas.porRodada[j].indexOf(Math.abs(item)) > -1;
+        //});
+
+        // para cada time
+        for (var ti = 0; ti < cestas.porTime[i].length; ti++) {                // restrições (1) e (2)
+            // disponibiliza para sorteio se ele está tb na cesta da rodada
+            if (cestas.porRodada[j].indexOf(Math.abs(cestas.porTime[i][ti])) > -1) {
+                disponiveis.push(cestas.porTime[i][ti]);
+            }
+        }
 
         if (j > 0){
             util.popValue(disponiveis, -A[i][j-1]);                              // restrição (3)
 
-            if (j > 3){
-                disponiveis = disponiveis.filter(function(item, pos){
-                    var somaSinaisAnteriores = 0;
+            if (j > 2) {
+                for (var di = 0; di < disponiveis.length; di++) {                // restrição (4)
+                    var soma = 0;
+                    soma += disponiveis[i] / Math.abs(disponiveis[i]);
+                    soma += A[i][j - 1] / Math.abs(A[i][j - 1]);
+                    soma += A[i][j - 2] / Math.abs(A[i][j - 2]);
+                    soma += A[i][j - 3] / Math.abs(A[i][j - 3]);
 
-                    for (var k = 1; k <= 3 && k <= j; k++){
-                        somaSinaisAnteriores += A[i][j-k] / Math.abs(A[i][j-k]);
+                    if (soma === 4) {
+                        disponiveis.splice(i, 1); // retira o elemento do array
                     }
-
-                    somaSinaisAnteriores += item / Math.abs(item);
-
-                    return somaSinaisAnteriores <= 3;                           // restrição (4)
-                });
+                }
             }
         }
 
@@ -130,13 +140,11 @@ var TTP = (function() {
             var cestaState = cestas;
             var tentativas = 0;
 
-            while(!rodadaPreenchida(calendario, j) && tentativas < 1000){
+            while (!rodadaPreenchida(calendario, j) && tentativas < limites.preencherRodada * rodadas) {
                 cestas = cestaState;
 
                 try {
                     for(var i = 0; i < times.length; i++){
-                        // Aij = sorteiaOponente(A, i, j, cestas);
-
                         if (calendario[i][j] == undefined) {
                             // Se jogo inédito, randomiza locais, senão troca visitante<->casa
                             //var oponenteIndex = escolheOponenteIndex(calendario, i, j);
@@ -157,16 +165,13 @@ var TTP = (function() {
                             //UI.fillTableCell('V', oponenteIndex, j, time);
                         }
                     }
-                }
-                catch(ex){
-
-                }
+                } catch(ex){}
 
                 tentativas++;
             }
 
-            if (tentativas === 1000){
-                console.log('Esgotou tentativas. Regera calendário.');
+            if (tentativas === limites.preencherRodada * rodadas) {
+                //console.log('Esgotou tentativas. Regera calendário.');
                 return null;
             }
             cestas = cestaState;
@@ -297,35 +302,37 @@ var TTP = (function() {
     };
 
     function trocaPosicoes(A) {
-        // Seleciona 2 times
-        var comb = perturb.combinacoes[Math.floor(Math.random() * perturb.combinacoes.length)];
-        var i1 = comb[0];
-        var i2 = comb[1];
+        for (var i = 0; i < Math.pow(A.length, 3); i++) {
+            // Seleciona 2 times
+            var comb = perturb.combinacoes[Math.floor(Math.random() * perturb.combinacoes.length)];
+            var i1 = comb[0];
+            var i2 = comb[1];
 
-        // tentativas
-        for (var i = 0; i < A[0].length*10; i++) {
-            var rodadas = [];
-            // rodadas onde ocorre confronto direto entre os 2 times selecionados
-            for (var j = 0; j < A[0].length; j++) {
-                // adiciona se não for entre eles mesmos (não queremos um time jogando com ele mesmo)
-                if (Math.abs(A[i1][j]) !== i2 + 1 && Math.abs(A[i2][j]) !== i1 + 1) {
-                    rodadas.push(j);
+            // tentativas
+            for (var i = 0; i < A[0].length; i++) {
+                var rodadas = [];
+                // rodadas onde ocorre confronto direto entre os 2 times selecionados
+                for (var j = 0; j < A[0].length; j++) {
+                    // adiciona se não for entre eles mesmos (não queremos um time jogando com ele mesmo)
+                    if (Math.abs(A[i1][j]) !== i2 + 1 && Math.abs(A[i2][j]) !== i1 + 1) {
+                        rodadas.push(j);
+                    }
                 }
-            }
 
-            var swap;
-            while (rodadas.length > 0) {
-                var j = util.randomRemove(rodadas);
-                swap = A[i1][j];
-                A[i1][j] = A[i2][j];
-                A[i2][j] = swap;
+                var swap;
+                while (rodadas.length > 0) {
+                    var j = util.randomRemove(rodadas);
+                    swap = A[i1][j];
+                    A[i1][j] = A[i2][j];
+                    A[i2][j] = swap;
 
-                if (TTP.SolucaoValida(A)) {
-                    //console.log('Pertubou matriz com sucesso!');
-                    return A;
-                }
-                else {
-                    //console.log('Não pertubou sucesso!');
+                    if (TTP.SolucaoValida(A)) {
+                        //console.log('Perturbou matriz com sucesso!');
+                        return A;
+                    }
+                    else {
+                        //console.log('Não pertubou sucesso!');
+                    }
                 }
             }
         }
@@ -343,20 +350,22 @@ var TTP = (function() {
             }
 
             var timesEscolhidos = liga.slice(0, qtdTimes);
-            var tentativas = 0;
-            var calendarioCandidato = null;
+            var candidato = null;
+            var perf = performance.now();
 
-            for (; tentativas < 100 && calendarioCandidato == null; tentativas++){
-                calendarioCandidato = geraCalendario(timesEscolhidos);
+            for (var tentativas = 0; performance.now() - perf < limites.solInicial*1000 && candidato === null; tentativas++) {
+                candidato = geraCalendario(timesEscolhidos);
             }
 
-            if (tentativas === 100){
-                throw 'Máximo de tentativas esgotadas para gerar o calendário.';
+            perf = performance.now() - perf;
+
+            if (candidato === null) {
+                throw 'Máximo de tentativas esgotadas para gerar o calendário em ' + limites.solInicial + ' segundos.';
             }
 
             return {
-                calendario: calendarioCandidato,
-                viagens: this.CriaMatrizViagens(calendarioCandidato)
+                calendario: candidato,
+                viagens: this.CriaMatrizViagens(candidato)
             };
         },
         // A perturbação ocorre quando alteramos a solução dada.
@@ -364,12 +373,13 @@ var TTP = (function() {
         // trocar os oponentes de 2 times numa determinada rodada
         Perturba: function(solucao, temperatura, tempInicial) {
             if (!this.SolucaoValida(solucao.calendario)) {
+                return solucao;
                 throw 'A matriz a ser perturbada não é válida.';
             }
             var A = clonaMatriz(solucao.calendario);
             //var perturbou = false;
             //var qtdRodadas = A[0].length;
-            //var candidato;
+            var candidato;
 
             //if (candidato === null) {
             //    candidato = trocaColunas(A);
@@ -378,12 +388,12 @@ var TTP = (function() {
             //    }
             //}
 
-            for (var t = 0; t < temperatura; t++) {
+            //for (var t = 0; t < temperatura; t++) {
                 candidato = trocaPosicoes(A);
                 if (candidato !== null) {
                     A = candidato;
                 }
-            }
+            //}
 
             if (A === null) {
                 return solucao;
@@ -614,86 +624,3 @@ var TTP = (function() {
 
 
 
-
-
-// Seleciona 1 rodada
-/*                var j = colunas[Math.floor(Math.random() * colunas.length)];
-                util.popValue(colunas, j);
-
-                
-                if (Math.abs(A[i1][j]) !== i2+1 && Math.abs(A[i2][j]) !== i1+1){
-                    var saveState = {
-                        matriz : util.clonaMatriz(A),
-                        j : parseInt(j),
-                        colunas: colunas.slice()
-                    };
-
-                    // 1ª Perturbação
-                    var swap = A[i1][j];
-                    A[i1][j] = A[i2][j];
-                    A[i2][j] = swap;
-                    perturbou = true;
-
-                    // Até ter uma solução válida, continua perturbando para ajustar a solução
-                    var t = 0;
-                    for (; t < 1000 && !this.SolucaoValida(A); t++){
-                        // Procura por jogos duplicados de outras rodadas ainda não pertubadas, e os perturba
-                        var j_ = [A[i1].indexOf(A[i1][j]), A[i1].lastIndexOf(A[i1][j])]
-                        j_ = j_.filter(function(value) {
-                            return colunas.indexOf(value) > -1;
-                        });
-
-                        if (j_.length > 0){
-                            j = j_[Math.floor(Math.random() * j_.length)];
-                            swap = A[i1][j];
-                            A[i1][j] = A[i2][j];
-                            A[i2][j] = swap;
-                            util.popValue(colunas, j);
-                        }
-                        else{
-                            var j_ = [A[i2].indexOf(A[i2][j]), A[i2].lastIndexOf(A[i2][j])]
-                            j_ = j_.filter(function(value) {
-                                return colunas.indexOf(value) > -1;
-                            });
-
-                            if (j_.length > 0){
-                                j = j_[Math.floor(Math.random() * j_.length)];
-                                swap = A[i1][j];
-                                A[i1][j] = A[i2][j];
-                                A[i2][j] = swap;
-                                util.popValue(colunas, j);
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                    }
-
-                    if(!this.SolucaoValida(A)){
-                        //console.log('Esgotadas as tentativas de perturbações e a solução continua inválida. Efetuano um rollback na pertubação.');
-                        A = util.clonaMatriz(saveState.matriz);
-                        j = saveState.j;
-                        colunas = saveState.colunas;
-                        perturbou = false;
-                    }
-                }
-                
-
-            if (!this.SolucaoValida(A)) {
-                A = util.clonaMatriz(saveState.matriz);
-                j = saveState.j;
-                colunas = saveState.colunas;
-                perturbou = false;
-
-                console.log('fima: ' + TTP.FuncaoObj(solucao) + ' :: ' + TTP.SolucaoValida(solucao.calendario));
-                //console.log('Esgotadas as tentativas de perturbações e a solução continua inválida. Efetuano um rollback na pertubação.');
-                return solucao;
-            }
-
-            //UI.atualizaTabela(A, 'O');
-            console.log('fim: '+ TTP.FuncaoObj({viagens: this.CriaMatrizViagens(A)}) + ' :: ' + TTP.SolucaoValida(A));
-            return {
-                calendario : A,
-                viagens : this.CriaMatrizViagens(A)
-            };
-            */

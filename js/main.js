@@ -2,6 +2,13 @@
 
 var liga = ['ATL', 'NYM', 'PHI', 'MON', 'FLA', 'PIT', 'CIN', 'CHI', 'STL', 'MIL', 'HOU', 'COL', 'SF', 'SD', 'LA', 'ARI'];
 
+// Máximos de tentativas das iterações
+// não definidos como parâmetro de entrada
+var limites = {
+    solInicial: 10, // em segundos
+    preencherRodada: 100
+};
+
 $(document).ready(function() {
     // 
     $('#run').click(function () {
@@ -11,46 +18,64 @@ $(document).ready(function() {
     	$('#solinicial-viagens').html('');
     	$('#solinicial-valor').text('');
 
-        try {
-            var qtdTimes = util.inputValueToNumber('QtdTimes', 2, 16, 1);
-            var temperatura = util.inputValueToNumber('Temperatura', 1, 10000, 1);
-            var alfa = util.inputValueToNumber('Alfa', 0, 1, 0.001);
-            var maxIteracoes = util.inputValueToNumber('MaxIteracoes', 0, 99999, 1);
-            var maxPerturb = util.inputValueToNumber('MaxPerturb', 0, 9999, 1);
-            var maxSucessos = util.inputValueToNumber('MaxSucessos', 0, 9999, 1);
-        } catch (ex) {
-            alert(ex);
-        }
+    	//var bestOfAll = { si: 0, sf: 9999999, t : 0 };
+    	//for (var n = 0; n < 30; n++) {
+    	try {
+    	    var qtdTimes = util.inputValueToNumber('QtdTimes', 2, 16, 1);
+    	    var temperatura = util.inputValueToNumber('Temperatura', 1, 999999, 1);
+    	    var alfa = util.inputValueToNumber('Alfa', 0, 1, 0.001);
+    	    var maxIteracoes = util.inputValueToNumber('MaxIteracoes', 0, 999999, 1);
+    	    var maxPerturb = util.inputValueToNumber('MaxPerturb', 0, 999999, 1);
+    	    var maxSucessos = util.inputValueToNumber('MaxSucessos', 0, 9999, 1);
 
-		$('#divSolucaoInicial').show();
-        $('#solinicial-calendario').html(UI.geraEstruturaCalendario(liga, qtdTimes));
-        $('#solinicial-viagens').html(UI.geraEstruturaViagens(liga, qtdTimes));
+    	    $('#divSolucaoInicial').show();
+    	    $('#solinicial-calendario').html(UI.geraEstruturaCalendario(liga, qtdTimes));
+    	    $('#solinicial-viagens').html(UI.geraEstruturaViagens(liga, qtdTimes));
 
-        UI.adicionaEventos('solinicial-calendario');
-        UI.adicionaEventos('solinicial-viagens');
+    	    UI.adicionaEventos('solinicial-calendario');
+    	    UI.adicionaEventos('solinicial-viagens');
 
-        var solucaoInicial = TTP.GeraSolucaoInicial(qtdTimes);
-    	$('#solinicial-valor').text(TTP.FuncaoObj(solucaoInicial));
-        UI.atualizaTabela(solucaoInicial.calendario, 'V');
-        UI.atualizaTabela(solucaoInicial.viagens, 'A');
+    	    //var perf = performance.now();
+    	    var solucaoInicial = TTP.GeraSolucaoInicial(qtdTimes);
 
+    	    // Funções de UI entram na conta da performance pq seu tempo computacional é desprezível
+    	    $('#solinicial-valor').text(TTP.FuncaoObj(solucaoInicial));
+    	    UI.atualizaTabela(solucaoInicial.calendario, 'V');
+    	    UI.atualizaTabela(solucaoInicial.viagens, 'A');
 
+    	    $('#results').show();
+    	    var info = TTP.Info(qtdTimes);
+    	    $('#instancia-feasible').text(info.feasibleSolution.value + ' ' + info.feasibleSolution.ref);
+    	    $('#instancia-lowerbound').text(info.lowerBound.value + ' ' + info.lowerBound.ref);
+    	    $('#result-optimal').text(' ');
 
-    	$('#results').show();
-    	var info = TTP.Info(qtdTimes);
-    	$('#instancia-feasible').text(info.feasibleSolution.value + ' ' + info.feasibleSolution.ref);
-    	$('#instancia-lowerbound').text(info.lowerBound.value + ' ' + info.lowerBound.ref);
-    	$('#result-optimal').text(' ');
+    	    $('#solotima-calendario').html(UI.geraEstruturaOtima(liga, qtdTimes));
+    	    UI.adicionaEventos('solotima-calendario');
+    	    UI.atualizaTabela(solucaoInicial.calendario, 'O');
 
-    	$('#solotima-calendario').html(UI.geraEstruturaOtima(liga, qtdTimes));
-        UI.adicionaEventos('solotima-calendario');
-        UI.atualizaTabela(solucaoInicial.calendario, 'O');
+    	    var valorOtimo = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
+    	    //perf = performance.now() - perf;
 
-        //var valorOtimo = TTP.FuncaoObj(solucaoInicial.viagens);
-        var valorOtimo = SA.Exec(solucaoInicial, temperatura, alfa, maxIteracoes, maxPerturb, maxSucessos);
+    	    var fobj = TTP.FuncaoObj(valorOtimo);
+    	    //var fsi = TTP.FuncaoObj(solucaoInicial);
+            // Não conseguiu melhorar nada, descarta
+    	    //if (fobj !== fsi) {
+    	        //console.log(fsi + '\t' + fobj + '\t' + parseInt(perf) + 'ms')
+    	    //}
 
-        UI.atualizaTabela(valorOtimo.calendario, 'O');
-        $('#result-optimal').text(TTP.FuncaoObj(valorOtimo));
+    	    UI.atualizaTabela(valorOtimo.calendario, 'O');
+    	    $('#result-optimal').text(fobj);
+
+    	    /*if (fobj < bestOfAll.sf && fobj >= TTP.Info(qtdTimes).lowerBound.value && fobj !== fsi) {
+    	        bestOfAll.si = fsi;
+    	        bestOfAll.sf = fobj;
+    	        bestOfAll.t = parseInt(perf);
+    	    }*/
+    	} catch (ex) {
+    	    alert(ex);
+    	}
+    //}
+    	//console.log('Melhor de todos (Si, Sf, ms):\n-------------------------------\n' + bestOfAll.si + '\t' + bestOfAll.sf + '\t' + bestOfAll.t);
     });
 
 });
