@@ -1,7 +1,4 @@
-TTP_SA.js
-=========
+ttp-sa
+=======
 
 JavaScript implementation of Simulated Annealing to resolve Traveling Tournament Problem.
-
-To see live demo, visit http://andretrindade.com/repository/ttpsa/
-
